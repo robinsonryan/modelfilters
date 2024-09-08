@@ -1,66 +1,133 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+# Laravel ModelFilter Utility
 
-## About Laravel
+The **ModelFilter** module is designed to automate and simplify the process of building search queries for Eloquent models in Laravel applications. The module is currently located in the `app/Utils/ModelFilter` directory. While this repository contains a full Laravel application with a demo, **the files in the `app/Utils/ModelFilter` directory are all that you need to integrate it into your own project**. Cloning the entire repo will give you a demonstration from at http://yoursite.local/users/search
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Installation
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+1. **Copy the Files:**
+   - Copy the files from the `app/Utils/ModelFilter` directory into the same directory structure in your own Laravel app (e.g., `app/Utils/ModelFilter`).
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+2. **Add the `Filterable` Trait to Your Models:**
+   - Any model that needs to be searchable must include the `Filterable` trait.
+   - Example:
+     ```php
+     use App\Utils\ModelFilter\Traits\Filterable;
 
-## Learning Laravel
+     class YourModel extends Model
+     {
+         use Filterable;
+     }
+     ```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+3. **Create a `FilterRequest` Class:**
+   - Create a new request class that extends `App/Utils/ModelFilter/FilterRequest`. The `FilterRequest` class extends Laravel's `FormRequest` class, but adds additional methods for use in filtering. It is worth noting that the class implements prepareForValidation logic that removes all null/empty fields from the request before validation occurs. 
+   - Define your validation rules in this class, which will operate only on the fields in `$request->validated()`.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+   Example:
+   ```php
+   use App\Utils\ModelFilter\FilterRequest;
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+   class YourModelFilterRequest extends FilterRequest
+   {
+       public function rules(): array
+       {
+           return [
+               'name' => 'string|nullable',
+               'email' => 'string|nullable',
+               'country' => 'string|nullable',
+           ];
+       }
+   }
+   ```
 
-## Laravel Sponsors
+4. **Define the Filters:**
+    - In your `FilterRequest` class, define the filters inside the `filters()` method.
+    - The filters map input names to the filtering logic.
+    - Example:
+      ```php
+      public function filters(): array
+      {
+          return [
+              'name' => 'string|or:name,nickname',  // Apply an OR filter looking for the value of the 'name' input on the 'name' or 'nickname' properties of the model
+              'email' => 'string:email',           // Custom column 'email'
+              'country' => 'string|not',           // Exclude certain countries
+          ];
+      }
+      ```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+5. **Apply the Filters in the Controller:**
+    - Inject the `FilterRequest` and `ModelFilter` classes into your controller and apply the filters to your model.
+    - Example:
+      ```php
+      use App\Utils\ModelFilter\ModelFilter;
+ 
+      class YourController extends Controller
+      {
+          public function search(YourModelFilterRequest $request, ModelFilter $filter)
+          {
+              $models = YourModel::filter($request, $filter)->get();
+              return response()->json($models);
+          }
+      }
+      ```
 
-### Premium Partners
+## How It Works
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+There is a demo search form available at https://domain.com/user/search if you clone the entire repo.  It demonstrates the underlying automated process of building search queries for models in Laravel applications. It allows you to easily define filters within your `FilterRequest` (which extends Laravel's `FormRequest` class) and automatically apply those filters to Eloquent models in the controller.
 
-## Contributing
+### Key Steps:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+- **Create a `FilterRequest`:** In your app, create a new class that extends the `FilterRequest`. This class will define your validation rules, messages, and, most importantly, the `filters()` method.
 
-## Code of Conduct
+- **Define the Filters:** In the `filters()` method, map the input fields (e.g., 'name', 'email', 'nickname') to the filtering logic.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+  Example filter:
+   ```php
+   public function filters(): array
+   {
+       return [
+           'name' => 'string|or:name,nickname',  // Apply an OR filter on 'name' and 'nickname'
+           'email' => 'string:email',           // Custom column 'email'
+           'country' => 'string|not',           // Exclude certain countries
+       ];
+   }
+   ```
 
-## Security Vulnerabilities
+  Each filter string follows the format:
+   ```
+   'input_name(s)' => 'method|modifier(s):property_name(s)'
+   ```
+  The method and modifiers define how the query is built.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+- **Apply Filters in the Controller:** In the controller, inject the `FilterRequest` and `ModelFilter` into the method and apply the filter logic.
+   ```php
+   public function search(UsersFilterRequest $request, ModelFilter $filter): Response
+   {
+       $query = User::filter($request, $filter)->get();
+   }
+   ```
 
-## License
+This system automatically applies the filters defined in the `FilterRequest` class to the model's query, handling the search logic behind the scenes. Only string methods are available now.  They accept input values with or without wildcards (%).
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Future Plans
+
+While the current implementation focuses primarily on string-based filtering with simple modifiers like `and`, `or`, and `not`, there are several planned extensions to increase flexibility and functionality:
+
+- **Support for numeric filters:** Add methods to handle integers and numeric ranges (e.g., greater than, less than, between).
+- **Date filters:** Support for date-based queries, such as filtering by dates before, after, or between specified ranges.
+- **Custom filter methods:** Allow developers to define custom filtering methods to handle complex queries and edge cases.
+- **Related model filtering:** Enable filtering based on properties in related models (e.g., filtering users based on properties in their associated posts).
+- **Additional modifiers:** Introduce new modifiers such as `not_null` for checking non-empty fields, and `exists` to filter records based on the existence of related data.
+- **Nested Configurations:** Nest filter configurations such that the final query operations are applied as a group.
+
+## Notes
+
+- **Validation:** The `FilterRequest` only operates on validated fields, ensuring the security and accuracy of your search queries.
+- **Modularity:** Effort has been made to design in a modular and extendable fashion, allowing developers to customize it according to their application's needs.
+- **Null Inputs** Any input with a null or empty value is removed from the `$request` before validation. False and most other Falsey values are left alone. This may become configurable in the future.
+
+---
+
+I hope you find it useful.
+```
