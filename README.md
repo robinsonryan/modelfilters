@@ -74,7 +74,7 @@ The **ModelFilter** module is designed to automate and simplify the process of b
 
 ## How It Works
 
-There is a demo search form available at https://domain.com/user/search if you clone the entire repo.  It demonstrates the underlying automated process of building search queries for models in Laravel applications. It allows you to easily define filters within your `FilterRequest` (which extends Laravel's `FormRequest` class) and automatically apply those filters to Eloquent models in the controller.
+There is a demo search form available at the route /user/search.  It demonstrates the underlying automated process of building search queries for models in Laravel applications. You can easily define filters within your `FilterRequest` (which extends Laravel's `FormRequest` class) and automatically apply those filters to Eloquent models in the controller.
 
 ### Key Steps:
 
@@ -112,7 +112,7 @@ This system automatically applies the filters defined in the `FilterRequest` cla
 
 ## Future Plans
 
-While the current implementation focuses primarily on string-based filtering with simple modifiers like `and`, `or`, and `not`, there are several planned extensions to increase flexibility and functionality:
+While the current implementation focuses primarily on string-based filtering with simple modifiers like `and`, `or`, and `not`, eventually there will be additional extensions to increase flexibility and functionality:
 
 - **Support for numeric filters:** Add methods to handle integers and numeric ranges (e.g., greater than, less than, between).
 - **Date filters:** Support for date-based queries, such as filtering by dates before, after, or between specified ranges.
@@ -124,10 +124,6 @@ While the current implementation focuses primarily on string-based filtering wit
 ## Notes
 
 - **Validation:** The `FilterRequest` only operates on validated fields, ensuring the security and accuracy of your search queries.
-- **Modularity:** Effort has been made to design in a modular and extendable fashion, allowing developers to customize it according to their application's needs.
 - **Null Inputs** Any input with a null or empty value is removed from the `$request` before validation. False and most other Falsey values are left alone. This may become configurable in the future.
 
----
-
-I hope you find it useful.
 ```
